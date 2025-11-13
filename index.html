@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>المحقق (The Investigator)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+        html[lang="en"] body {
+            font-family: 'Roboto', sans-serif;
+        }
+        /* Add a simple fade-in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+    </style>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+  }
+}
+</script>
+    <!-- Add Babel to transpile JSX/TSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <div id="root"></div>
+    <!-- All application code is now inside this script tag -->
+    <script type="text/babel" data-presets="react,typescript" data-type="module">
+        import React from 'react';
+        import ReactDOM from 'react-dom/client';
+
+        const { useState, useEffect, useCallback } = React;
+        
+        // --- From types.ts ---
+        // types are defined globally within this script scope
+        
+        // --- From constants.ts ---
+        const UI_TEXTS = {
+          ar: {
+            appName: 'المحقق',
+            gameDescription: 'لعبة تحقيق واقعية. فريق المجرمين يقرأ القصة ويجهز قصته قبل بدء التحقيق.',
+            criminalsTeam: 'فريق المجرمين',
+            instructionsHeader: 'التعليمات:',
+            instructionsBody: 'اقرأوا القصة التالية بعناية. لديكم وقت محدد للاتفاق على كل تفاصيل عذركم. بعد انتهاء الوقت، سيبدأ المحققون باستجوابكم.',
+            selectPrepTime: 'اختر مدة التحضير:',
+            minutes: 'دقائق',
+            startGame: 'ابدأ اللعبة',
+            prepTime: 'وقت التحضير المتبقي',
+            investigationStarts: 'انتهى الوقت!',
+            investigationBody: 'التحقيق يبدأ الآن. حظاً موفقاً.',
+            playAgain: 'العب مرة أخرى',
+            language: 'English',
+            min: 'د',
+            selectStory: 'اختر قصة الجريمة',
+            story: 'القصة',
+            skipTime: 'إنهاء التحضير',
+            goBack: 'رجوع'
+          },
+          en: {
+            appName: 'The Investigator',
+            gameDescription: 'A real-life investigation game. The Criminals team reads the story and prepares their alibi before the investigation begins.',
+            criminalsTeam: "Criminals' Team",
+            instructionsHeader: 'Instructions:',
+            instructionsBody: 'Read the following story carefully. You have a limited time to agree on all the details of your alibi. After the time is up, the investigators will begin questioning you.',
+            selectPrepTime: 'Select Preparation Time:',
+            minutes: 'Minutes',
+            startGame: 'Start Game',
+            prepTime: 'Remaining Prep Time',
+            investigationStarts: "Time's up!",
+            investigationBody: 'The investigation begins now. Good luck.',
+            playAgain: 'Play Again',
+            language: 'العربية',
+            min: 'min',
+            selectStory: 'Select a Crime Story',
+            story: 'Story',
+            skipTime: "We're Done",
+            goBack: 'Go Back'
+          }
+        };
+
+        const STORIES = [
+          {
+            id: 1,
+            ar: {
+              title: 'جريمة في المكتبة',
+              content: 'في ليلة ممطرة، وُجد أمين المكتبة الثري، السيد أحمد، مقتولاً في غرفة الكتب النادرة. الباب كان مقفلاً من الداخل، والنافذة الوحيدة مرتفعة جداً للوصول إليها. اختفى كتاب قديم لا يقدر بثمن. آخر من شوهد معه كان فريقكم، الذين كنتم تبحثون عن وثائق تاريخية. عليكم الآن أن تقنعوا المحققين أنكم غادرتم قبل وقوع الجريمة، وأن لديكم عذراً قوياً.'
+            },
+            en: {
+              title: 'The Library Murder',
+              content: 'On a rainy night, the wealthy librarian, Mr. Smith, was found dead in the rare books room. The door was locked from the inside, and the only window was too high to reach. A priceless ancient book is missing. The last people seen with him were your team, who were researching historical documents. You must now convince the investigators that you left before the crime occurred and that you have a solid alibi.'
+            }
+          },
+          {
+            id: 2,
+            ar: {
+              title: 'اختفاء اللوحة',
+              content: 'في حفل افتتاح معرض فني، اختفت لوحة "النجمة الصامتة" الشهيرة. الأنوار انطفأت فجأة لمدة دقيقة واحدة، وعندما عادت، كانت اللوحة قد اختفت. كان فريقكم يقف بالقرب من اللوحة، معجباً بها. الآن، يشتبه فيكم الجميع. يجب أن تكون لديكم قصة متماسكة حول ما كنتم تفعلونه خلال تلك الدقيقة المظلمة.'
+            },
+            en: {
+              title: 'The Missing Painting',
+              content: 'During the opening gala of an art gallery, the famous painting "The Silent Star" vanished. The lights suddenly went out for exactly one minute, and when they came back on, the painting was gone. Your team was standing near the painting, admiring it. Now, everyone suspects you. You must have a cohesive story about what you were doing during that minute of darkness.'
+            }
+          },
+          {
+            id: 3,
+            ar: {
+              title: 'تخريب السباق',
+              content: 'في نهائي بطولة سباق الطائرات بدون طيار، تحطمت طائرة المتسابق الأوفر حظاً للفوز بشكل غامض قبل خط النهاية. التحقيقات الأولية تشير إلى تخريب متعمد. فريقكم هو فريق الميكانيكيين المنافس، وشوهدتم بالقرب من طائرة الضحية قبل السباق. يجب أن تثبتوا أن وجودكم هناك كان بريئاً تماماً.'
+            },
+            en: {
+              title: 'The Sabotaged Race',
+              content: 'In the final of the drone racing championship, the favorite contestant\'s drone mysteriously crashed just before the finish line. Initial investigations suggest deliberate sabotage. Your team is the rival mechanics crew, and you were seen near the victim\'s drone before the race. You must prove your presence there was entirely innocent.'
+            }
+          },
+          {
+            id: 4,
+            ar: {
+              title: 'السم في الحفل الخيري',
+              content: 'توفي رجل أعمال خيرية ثري خلال حفل خيري كان قد نظمه. سبب الوفاة هو سم نادر وُضع في شرابه. كان فريقكم مسؤولاً عن تقديم الطعام والمشروبات في الحفل، وأنتم من قدم الشراب الأخير للضحية. كل الأنظار موجهة إليكم الآن.'
+            },
+            en: {
+              title: 'The Poisoned Philanthropist',
+              content: 'A wealthy philanthropist has died during a charity gala he organized. The cause of death was a rare poison placed in his drink. Your team was in charge of catering the event, and you were the ones who served the victim his final drink. All eyes are now on you.'
+            }
+          },
+          {
+            id: 5,
+            ar: {
+              title: 'سرقة الصيغة السرية',
+              content: 'من داخل مختبر أبحاث شديد الحراسة، سُرقت صيغة ثورية للطاقة النظيفة. لم يكن هناك أي اقتحام. فريقكم يعمل في خدمة التنظيف الليلية، ولديكم تصريح للوصول إلى جميع مناطق المنشأة، بما في ذلك المختبر. يجب أن تقنعوا المحققين بأنكم لم تروا أو تسمعوا أي شيء خارج عن المألوف.'
+            },
+            en: {
+              title: 'The Stolen Formula',
+              content: 'From a high-security research lab, a revolutionary clean energy formula has been stolen. There were no signs of a break-in. Your team works the night cleaning service and has access to all areas of the facility, including the lab. You must convince investigators you saw and heard nothing out of the ordinary.'
+            }
+          },
+          {
+            id: 6,
+            ar: {
+              title: 'فضيحة التزوير الفني',
+              content: 'تم اكتشاف أن لوحة شهيرة في متحف المدينة هي نسخة مزورة متقنة. يشير التحقيق إلى أن التبديل حدث خلال الأسبوع الماضي. فريقكم هو المسؤول عن ترميم اللوحات، وكان لديكم وصول حصري للوحة. يجب أن تشرحوا ما كنتم تفعلونه بالضبط خلال فترة الترميم.'
+            },
+            en: {
+              title: 'The Art Forgery Scandal',
+              content: 'A famous painting in the city museum has been discovered to be an elaborate forgery. The investigation suggests the switch happened within the last week. Your team is responsible for art restoration and had exclusive access to the painting. You must explain what exactly you were doing during the restoration period.'
+            }
+          },
+          {
+            id: 7,
+            ar: {
+              title: 'تخريب في موقع التصوير',
+              content: 'خلال تصوير مشهد خطير لفيلم ضخم، تعطلت معدات السلامة مما أدى إلى إصابة النجم الرئيسي. الأدلة تشير إلى أنه تم العبث بالمعدات. فريقكم مسؤول عن المؤثرات الخاصة والمعدات، وكنتم آخر من فحصها. عليكم إثبات براءتكم.'
+            },
+            en: {
+              title: 'Sabotage on Set',
+              content: 'During the filming of a dangerous stunt for a major movie, the safety equipment failed, injuring the lead star. Evidence suggests the equipment was tampered with. Your team is in charge of special effects and equipment, and you were the last to check it. You must prove your innocence.'
+            }
+          },
+          {
+            id: 8,
+            ar: {
+              title: 'سرقة الماسة العاصفة',
+              content: 'خلال عاصفة شديدة أدت إلى انقطاع الكهرباء في المدينة، سُرقت ماسة "عين النمر" من خزنة مجوهرات. أنظمة الأمان تعطلت. فريقكم كان يعمل في شركة الأمن الخاصة بالمبنى، وكنتم في الخدمة تلك الليلة. كيف يمكنكم إقناع المحققين أنكم لم تستغلوا الفوضى؟'
+            },
+            en: {
+              title: 'The Diamond Heist',
+              content: 'During a severe storm that caused a city-wide power outage, the "Tiger\'s Eye" diamond was stolen from a jewelry store vault. The security systems were down. Your team works for the building\'s private security firm and was on duty that night. How can you convince investigators you didn\'t take advantage of the chaos?'
+            }
+          },
+          {
+            id: 9,
+            ar: {
+              title: 'العالم المختفي',
+              content: 'اختفى عالم فيزياء بارز يعمل على مشروع سري من مختبره. لا توجد علامات على اقتحام، لكن ملاحظاته البحثية مفقودة. فريقكم هو مجموعة من زملائه الباحثين الذين كانوا ينافسونه على التمويل والتقدير. كنتم آخر من تحدث إليه.'
+            },
+            en: {
+              title: 'The Vanished Scientist',
+              content: 'A prominent physicist working on a secret project has disappeared from his lab. There are no signs of a break-in, but his research notes are missing. Your team is a group of his fellow researchers who were competing with him for funding and recognition. You were the last people to speak with him.'
+            }
+          },
+          {
+            id: 10,
+            ar: {
+              title: 'اختراق البيانات',
+              content: 'تم تسريب بيانات حساسة لملايين العملاء من شركة تكنولوجيا كبرى. يشير التحقيق إلى أن الاختراق تم من الداخل. فريقكم يعمل في قسم تكنولوجيا المعلومات ولديه صلاحيات وصول عالية المستوى. عليكم شرح نشاطكم على الشبكة في ليلة الاختراق.'
+            },
+            en: {
+              title: 'The Data Breach',
+              content: 'Sensitive data for millions of customers has been leaked from a major tech corporation. The investigation points to an inside job. Your team works in the IT department with high-level access privileges. You must account for your network activity on the night of the breach.'
+            }
+          },
+          {
+            id: 11,
+            ar: {
+                title: 'جريمة في القطار السريع',
+                content: 'وُجد رجل أعمال نافذ مقتولاً في مقصورته الخاصة على متن قطار فاخر متجه عبر البلاد. كل من في العربة مشتبه به، بما في ذلك فريقكم الذي كان مسافراً لحضور نفس المؤتمر الذي كان الضحية متجهاً إليه. كان بينكم وبينه خلاف عمل معروف.'
+            },
+            en: {
+                title: 'Murder on the Express',
+                content: 'An influential businessman is found murdered in his private cabin on a luxury cross-country train. Everyone in the carriage is a suspect, including your team, who was traveling to the same conference as the victim. You had a known business dispute with him.'
+            }
+          },
+          {
+            id: 12,
+            ar: {
+                title: 'تهريب في الميناء',
+                content: 'اعترضت السلطات شحنة تحتوي على قطع أثرية مسروقة في ميناء المدينة. تم تتبع الشحنة إلى حاوية كان من المفترض أن تحتوي على بضائع عادية. فريقكم يعمل في شركة الشحن المسؤولة عن تحميل تلك الحاوية. كيف ستبررون هذا "الخطأ"؟'
+            },
+            en: {
+                title: 'The Port Smugglers',
+                content: 'Authorities have intercepted a shipment containing stolen artifacts at the city port. The shipment was traced back to a container that was supposed to hold regular cargo. Your team works for the shipping company responsible for loading that container. How will you explain this "mistake"?'
+            }
+          },
+          {
+            id: 13,
+            ar: {
+                title: 'البيت المسكون المزيف',
+                content: 'أبلغ وريث ثري عن أحداث خارقة للطبيعة في قصره القديم، مما دفعه لبيعه بسعر بخس. اكتشف المشتري الجديد أن "الأشباح" كانت مجرد خدع متقنة. فريقكم يعمل في شركة تنظيم مناسبات وقد نظمتم حفلاً في القصر قبل فترة وجيزة، مما أتاح لكم معرفة مداخله ومخارجه.'
+            },
+            en: {
+                title: 'The Staged Haunting',
+                content: 'A wealthy heir reported supernatural events in his old mansion, causing him to sell it for a fraction of its value. The new buyer discovered the "haunting" was just a series of elaborate tricks. Your team works for an event planning company and recently organized a party at the mansion, giving you knowledge of its layout.'
+            }
+          },
+          {
+            id: 14,
+            ar: {
+                title: 'سرقة زهرة الأوركيد النادرة',
+                content: 'اختفت زهرة أوركيد "شبح القمر" النادرة والفريدة من نوعها من دفيئة خاصة في حديقة نباتية. الزهرة لا تقدر بثمن لمجمعي النباتات. فريقكم من علماء النبات الزائرين، وتم منحكم إذناً خاصاً لدراسة الزهرة عن قرب في يوم اختفائها.'
+            },
+            en: {
+                title: 'The Stolen Orchid',
+                content: 'The rare and unique "Moon Ghost" orchid has vanished from a special greenhouse in a botanical garden. The flower is priceless to collectors. Your team of visiting botanists was granted special permission to study the orchid up close on the day it disappeared.'
+            }
+          },
+          {
+            id: 15,
+            ar: {
+                title: 'الصحفي المفقود',
+                content: 'اختفى صحفي استقصائي كان يعمل على قصة تكشف فساداً كبيراً في البلدية. آخر مرة شوهد فيها كان متجهاً لمقابلة مصدر مجهول. فريقكم يتكون من مسؤولين في البلدية كان الصحفي يحقق بشأنهم. عليكم تقديم عذر قوي حول مكان وجودكم في وقت اختفائه.'
+            },
+            en: {
+                title: 'The Missing Journalist',
+                content: 'An investigative journalist working on a story exposing major city hall corruption has gone missing. He was last seen heading to meet an anonymous source. Your team consists of city hall officials who were the subject of his investigation. You need a strong alibi for the time of his disappearance.'
+            }
+          },
+          {
+            id: 16,
+            ar: {
+                title: 'لعبة البوكر الخطرة',
+                content: 'في لعبة بوكر سرية عالية المخاطر، ادعى المضيف أن شريحة كازينو نادرة بقيمة مليون دولار قد سُرقت من مجموعته. كنتم أنتم اللاعبين الوحيدين على الطاولة. يدعي المضيف أن أحداً منكم أخذها خلال لحظة من الإلهاء. الآن عليكم جميعاً أن تشرحوا ما حدث.'
+            },
+            en: {
+                title: 'The High-Stakes Poker Game',
+                content: 'At a secret, high-stakes poker game, the host claims a rare, million-dollar casino chip has been stolen from his collection. You were the only other players at the table. The host claims one of you took it during a moment of distraction. Now you all have to explain what happened.'
+            }
+          },
+          {
+            id: 17,
+            ar: {
+                title: 'قضية سرقة الهوية',
+                content: 'اكتشف مدير تنفيذي ثري أن شخصاً ما قد سرق هويته، وسحب مبالغ كبيرة من حساباته المصرفية وقام بعمليات شراء فاخرة. تم تتبع النشاط إلى شبكة كمبيوتر كان فريقكم، وهم مستشارون تقنيون، قد قاموا بتركيبها مؤخراً. يجب أن تثبتوا أنكم لم تتركوا أي ثغرة أمنية خلفكم.'
+            },
+            en: {
+                title: 'The Case of Stolen Identity',
+                content: 'A wealthy executive discovers someone has stolen his identity, draining his bank accounts and making lavish purchases. The activity has been traced to a computer network that your team of tech consultants recently installed. You must prove you didn\'t leave a backdoor for yourselves.'
+            }
+          },
+          {
+            id: 18,
+            ar: {
+                title: 'حريق المستودع المتعمد',
+                content: 'دمر حريق مستودعاً يحتوي على إلكترونيات باهظة الثمن. قرر المحققون أنه حريق متعمد. مالك المستودع، الذي كان على وشك الإفلاس، لديه بوليصة تأمين ضخمة. فريقكم يعمل في شركة الخدمات اللوجستية المنافسة التي كانت ستستفيد من زوال منافسها. شوهدتم بالقرب من المنطقة في تلك الليلة.'
+            },
+            en: {
+                title: 'The Warehouse Arson',
+                content: 'A fire has destroyed a warehouse containing expensive electronics. Investigators have ruled it as arson. The warehouse owner, who was facing bankruptcy, has a massive insurance policy. Your team works for the rival logistics company that stood to gain from their competitor\'s demise. You were seen near the area that night.'
+            }
+          },
+          {
+            id: 19,
+            ar: {
+                title: 'الوصفة السرية',
+                content: 'سُرق كتاب الوصفات السري الخاص بطاهٍ مشهور عالمياً من مطبخه المقفل. يحتوي الكتاب على الوصفة التي صنعت شهرته. فريقكم هو طاقم تلفزيوني كان يصور فيلماً وثائقياً عن الطاهي في ذلك اليوم، وكان لديكم وصول غير مقيد إلى المطبخ. ما الذي كنتم تصورونه بالضبط؟'
+            },
+            en: {
+                title: 'The Secret Recipe',
+                content: 'A world-famous chef\'s private recipe book has been stolen from his locked kitchen. The book contains the recipe that made his name. Your team is a TV crew that was filming a documentary on the chef that day, and you had unrestricted access to the kitchen. What exactly were you filming?'
+            }
+          },
+          {
+            id: 20,
+            ar: {
+                title: 'الدهس والهروب',
+                content: 'قُتل شاهد رئيسي في قضية جنائية كبرى في حادث دهس وهروب تم ترتيبه ليبدو كحادث. كانت الضحية ستدلي بشهادتها ضد رئيس عصابة خطير. فريقكم له صلات بتلك العصابة وقد شوهدت سيارتكم، التي تطابق وصف شهود العيان، وهي تغادر مكان الحادث مسرعة. عليكم إثبات أنكم كنتم في مكان آخر.'
+            },
+            en: {
+                title: 'The Hit and Run',
+                content: 'A key witness in a major criminal trial has been killed in a hit-and-run that was staged to look like an accident. The victim was about to testify against a dangerous mob boss. Your team has connections to that mob, and your car, which matches the witness description, was seen speeding away from the scene. You need to prove you were somewhere else.'
+            }
+          }
+        ];
+        
+        // --- From components/icons/Icons.tsx ---
+        const ClockIcon = () => (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        );
+
+        const PlayIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        );
+
+        const CheckIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+        );
+
+        const BackIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+        );
+
+        // --- From components/Card.tsx ---
+        const Card = ({ children, className = '' }) => {
+          return (
+            <div className={`bg-gray-800 border border-gray-700 rounded-lg shadow-2xl p-6 md:p-8 ${className}`}>
+              {children}
+            </div>
+          );
+        };
+        
+        // --- From components/Timer.tsx ---
+        const Timer = ({ duration, onTimerEnd, language }) => {
+          const [timeLeft, setTimeLeft] = useState(duration);
+          const texts = UI_TEXTS[language];
+
+          useEffect(() => {
+            if (timeLeft <= 0) {
+              onTimerEnd();
+              return;
+            }
+
+            const intervalId = setInterval(() => {
+              setTimeLeft(prevTime => prevTime - 1);
+            }, 1000);
+
+            return () => clearInterval(intervalId);
+          }, [timeLeft, onTimerEnd]);
+
+          const minutes = Math.floor(timeLeft / 60);
+          const seconds = timeLeft % 60;
+
+          const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+          const isDanger = timeLeft <= 60;
+
+          return (
+            <div className="text-center p-4 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl">
+              <h3 className="text-lg text-gray-300 uppercase tracking-wider mb-2 flex items-center justify-center gap-2">
+                <ClockIcon />
+                {texts.prepTime}
+              </h3>
+              <div className={`text-6xl md:text-7xl font-bold font-mono transition-colors duration-500 ${isDanger ? 'text-red-500 animate-pulse' : 'text-amber-400'}`}>
+                {formattedTime}
+              </div>
+            </div>
+          );
+        };
+
+        // --- From components/LanguageSwitcher.tsx ---
+        const LanguageSwitcher = ({ language, toggleLanguage }) => {
+          const texts = UI_TEXTS[language];
+          return (
+            <button
+              onClick={toggleLanguage}
+              className="absolute top-4 right-4 rtl:right-auto rtl:left-4 bg-gray-700 text-gray-200 py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              {texts.language}
+            </button>
+          );
+        };
+        
+        // --- From components/IntroScreen.tsx ---
+        const timeOptions = [
+            { label: `3`, value: 180 },
+            { label: `5`, value: 300 },
+            { label: `10`, value: 600 },
+            { label: `15`, value: 900 },
+        ];
+
+        const IntroScreen = ({ onStartGame, language }) => {
+          const [selectedTime, setSelectedTime] = useState(300);
+          const texts = UI_TEXTS[language];
+
+          return (
+            <Card className="text-center animate-fade-in">
+              <h1 className="text-4xl md:text-5xl font-bold text-amber-400 mb-4">{texts.appName}</h1>
+              <p className="text-gray-300 mb-8">{texts.gameDescription}</p>
+
+              <div className="mb-8">
+                <label className="block text-lg font-semibold text-gray-200 mb-4">{texts.selectPrepTime}</label>
+                <div className="flex justify-center items-center gap-2 md:gap-4">
+                    {timeOptions.map(option => (
+                        <button
+                            key={option.value}
+                            onClick={() => setSelectedTime(option.value)}
+                            className={`px-4 py-2 rounded-md font-bold transition-all duration-200 flex items-center gap-2 text-lg ${selectedTime === option.value ? 'bg-amber-500 text-gray-900 scale-110 shadow-lg' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
+                        >
+                           {option.label} <span className="text-sm">{texts.min}</span>
+                        </button>
+                    ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => onStartGame(selectedTime)}
+                className="w-full max-w-xs mx-auto bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-xl hover:bg-green-500 transition-transform transform hover:scale-105 flex items-center justify-center gap-3 shadow-lg"
+              >
+                <PlayIcon />
+                {texts.startGame}
+              </button>
+            </Card>
+          );
+        };
+        
+        // --- From components/StorySelectionScreen.tsx ---
+        const StorySelectionScreen = ({ stories, onStorySelect, onBack, language }) => {
+          const texts = UI_TEXTS[language];
+
+          return (
+            <Card className="animate-fade-in">
+              <div className="flex justify-between items-center mb-6">
+                <h1 className="text-3xl md:text-4xl font-bold text-amber-400">{texts.selectStory}</h1>
+                <button 
+                    onClick={onBack}
+                    className="flex items-center gap-2 bg-gray-700 text-gray-200 py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
+                    aria-label={texts.goBack}
+                >
+                    <BackIcon />
+                    <span className="hidden md:inline">{texts.goBack}</span>
+                </button>
+              </div>
+              
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                {stories.map((story, index) => (
+                  <button
+                    key={story.id}
+                    onClick={() => onStorySelect(story)}
+                    className="w-full text-left p-4 bg-gray-700 rounded-lg hover:bg-amber-500 hover:text-gray-900 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-amber-400 rtl:text-right"
+                  >
+                    <h2 className="text-xl font-bold">{`${texts.story} ${index + 1}: ${story[language].title}`}</h2>
+                  </button>
+                ))}
+              </div>
+            </Card>
+          );
+        };
+
+        // --- From components/PrepScreen.tsx ---
+        const PrepScreen = ({ story, prepTime, onEndPrep, language }) => {
+          const storyText = story[language];
+          const texts = UI_TEXTS[language];
+
+          return (
+            <div className="animate-fade-in">
+                <Timer duration={prepTime} onTimerEnd={onEndPrep} language={language} />
+                <Card className="mt-8">
+                    <h2 className="text-3xl font-bold text-amber-400 mb-4 text-center">{storyText.title}</h2>
+                    <p className="text-gray-200 text-lg leading-relaxed whitespace-pre-wrap">{storyText.content}</p>
+                </Card>
+                
+                <div className="mt-8 text-center">
+                    <button
+                        onClick={onEndPrep}
+                        className="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-indigo-500 transition-transform transform hover:scale-105 shadow-lg flex items-center justify-center gap-3 mx-auto"
+                    >
+                        <CheckIcon />
+                        {texts.skipTime}
+                    </button>
+                </div>
+            </div>
+          );
+        };
+        
+        // --- From components/InvestigationScreen.tsx ---
+        const InvestigationScreen = ({ onPlayAgain, language }) => {
+          const texts = UI_TEXTS[language];
+
+          return (
+            <Card className="text-center animate-fade-in">
+              <h2 className="text-4xl md:text-5xl font-bold text-red-500 mb-4">{texts.investigationStarts}</h2>
+              <p className="text-gray-300 text-xl mb-8">{texts.investigationBody}</p>
+              <button
+                onClick={onPlayAgain}
+                className="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-blue-500 transition-transform transform hover:scale-105 shadow-lg"
+              >
+                {texts.playAgain}
+              </button>
+            </Card>
+          );
+        };
+
+        // --- From App.tsx ---
+        function App() {
+          const [language, setLanguage] = useState('ar');
+          const [gamePhase, setGamePhase] = useState('intro');
+          const [selectedStory, setSelectedStory] = useState(null);
+          const [prepTime, setPrepTime] = useState(300);
+
+          useEffect(() => {
+            if (language === 'ar') {
+              document.documentElement.lang = 'ar';
+              document.documentElement.dir = 'rtl';
+            } else {
+              document.documentElement.lang = 'en';
+              document.documentElement.dir = 'ltr';
+            }
+          }, [language]);
+
+          const toggleLanguage = useCallback(() => {
+            setLanguage(prev => (prev === 'ar' ? 'en' : 'ar'));
+          }, []);
+
+          const handleSetTimeAndProceed = useCallback((timeInSeconds) => {
+            setPrepTime(timeInSeconds);
+            setGamePhase('storySelection');
+          }, []);
+
+          const handleStorySelect = useCallback((story) => {
+            setSelectedStory(story);
+            setGamePhase('prep');
+          }, []);
+
+          const handleEndPrep = useCallback(() => {
+            setGamePhase('investigation');
+          }, []);
+          
+          const handlePlayAgain = useCallback(() => {
+              setSelectedStory(null);
+              setGamePhase('intro');
+          }, []);
+
+          const handleBackToIntro = useCallback(() => {
+              setGamePhase('intro');
+          }, []);
+
+          const renderPhase = () => {
+            switch (gamePhase) {
+              case 'storySelection':
+                return <StorySelectionScreen stories={STORIES} onStorySelect={handleStorySelect} onBack={handleBackToIntro} language={language} />;
+              case 'prep':
+                if (selectedStory) {
+                  return <PrepScreen story={selectedStory} prepTime={prepTime} onEndPrep={handleEndPrep} language={language} />;
+                }
+                // Fallback to intro if story is somehow not set
+                return <IntroScreen onStartGame={handleSetTimeAndProceed} language={language} />;
+              case 'investigation':
+                return <InvestigationScreen onPlayAgain={handlePlayAgain} language={language} />;
+              case 'intro':
+              default:
+                return <IntroScreen onStartGame={handleSetTimeAndProceed} language={language} />;
+            }
+          };
+
+          return (
+            <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center justify-center p-4">
+                <LanguageSwitcher language={language} toggleLanguage={toggleLanguage} />
+                <div className="w-full max-w-2xl mx-auto">
+                    {renderPhase()}
+                </div>
+            </div>
+          );
+        }
+
+        // --- From index.tsx ---
+        const rootElement = document.getElementById('root');
+        if (!rootElement) {
+          throw new Error("Could not find root element to mount to");
+        }
+
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(
+          <React.StrictMode>
+            <App />
+          </React.StrictMode>
+        );
+
+    </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
